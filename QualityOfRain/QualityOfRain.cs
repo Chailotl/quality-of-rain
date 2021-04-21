@@ -1,7 +1,6 @@
 ﻿using BepInEx;
 using R2API.Utils;
 using RoR2;
-using RoR2.UI;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -60,16 +59,6 @@ namespace Chai
 					if (cm.GetBody() == body || networkUser == null) { continue; }
 					networkUser.AwardLunarCoins(count);
 				}
-			};
-
-			On.RoR2.PickupPickerController.Awake += (orig, self) =>
-			{
-				ChatMessage.Send("controller");
-			};
-
-			On.RoR2.UI.PickupPickerPanel.Awake += (orig, self) =>
-			{
-				ChatMessage.Send("panel");
 			};
 
 			On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, activator) =>
