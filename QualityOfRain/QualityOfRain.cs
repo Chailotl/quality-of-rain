@@ -48,7 +48,7 @@ namespace Chai
 				"Gunner turrets will be teleported to the teleporter when it is activated."
 			);
 
-			// Load stuff
+			// Remove delays from some interactables
 			On.RoR2.Stage.Start += (orig, self) =>
 			{
 				orig(self);
@@ -69,11 +69,13 @@ namespace Chai
 				}
 			};
 
+			// Remove sound and animation if host
 			On.EntityStates.Duplicator.Duplicating.BeginCooking += (orig, self) =>
 			{
 				if (!NetworkServer.active) { orig(self); }
 			};
 
+			// Let clients know duplicator can be used
 			On.EntityStates.Duplicator.Duplicating.DropDroplet += (orig, self) =>
 			{
 				orig(self);
@@ -83,6 +85,7 @@ namespace Chai
 				}
 			};
 
+			// Remove shrine of chance cooldown
 			On.RoR2.ShrineChanceBehavior.AddShrineStack += (orig, self, activator) =>
 			{
 				orig(self, activator);
@@ -92,6 +95,7 @@ namespace Chai
 				}
 			};
 
+			// Share lunar coins will all players
 			On.RoR2.GenericPickupController.GrantLunarCoin += (orig, self, body, count) =>
 			{
 				orig(self, body, count);
