@@ -83,7 +83,10 @@ namespace Chai
 			On.RoR2.ShrineChanceBehavior.AddShrineStack += (orig, self, activator) =>
 			{
 				orig(self, activator);
-				self.SetFieldValue("refreshTimer", 0f);
+				if (FastShrineOfChance.Value && NetworkServer.active)
+				{
+					self.SetFieldValue("refreshTimer", 0f);
+				}
 			};
 
 			On.RoR2.GenericPickupController.GrantLunarCoin += (orig, self, body, count) =>
@@ -104,7 +107,7 @@ namespace Chai
 			On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, activator) =>
 			{
 				orig(self, activator);
-				if (!self.isIdle) { return; }
+				if (!TeleportGunnerTurrets.Value || !NetworkServer.active || !self.isIdle) { return; }
 
 				List<CharacterMaster> turrets = new List<CharacterMaster>();
 
