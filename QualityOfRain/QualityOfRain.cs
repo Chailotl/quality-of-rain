@@ -72,7 +72,7 @@ namespace Chai
 			// Remove sound and animation if host
 			On.EntityStates.Duplicator.Duplicating.BeginCooking += (orig, self) =>
 			{
-				if (!NetworkServer.active) { orig(self); }
+				if (!FastPrinters.Value || !NetworkServer.active) { orig(self); }
 			};
 
 			// Let clients know duplicator can be used
