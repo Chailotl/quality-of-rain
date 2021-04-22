@@ -111,6 +111,7 @@ namespace Chai
 				}
 			};
 
+			// Teleport all gunner turrets to teleporter
 			On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, activator) =>
 			{
 				orig(self, activator);
@@ -127,7 +128,7 @@ namespace Chai
 				}
 
 				float angle = 2 * Mathf.PI / turrets.Count;
-				bool primordial = self.name.StartsWith("Lunar"); //(Run.instance.stageClearCount + 1) % 5 == 0;
+				bool primordial = self.name.StartsWith("Lunar");
 				float radius = primordial ? BIG_RADIUS : RADIUS;
 				for (int i = 0; i < turrets.Count; ++i)
 				{
