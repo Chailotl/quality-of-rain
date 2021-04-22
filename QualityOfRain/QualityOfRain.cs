@@ -15,6 +15,7 @@ namespace Chai
 		private const float RADIUS = 7f;
 		private const float BIG_RADIUS = 11.5f;
 
+		private static ConfigFile ConfigFile { get; set; }
 		public static ConfigEntry<bool> FastPrinters { get; set; }
 		public static ConfigEntry<bool> FastShrineOfChance { get; set; }
 		public static ConfigEntry<bool> FastScrappers { get; set; }
@@ -24,23 +25,25 @@ namespace Chai
 		public void Awake()
 		{
 			// Create config
-			FastPrinters = Config.Bind(
+			ConfigFile = new ConfigFile(Paths.ConfigPath + "\\Quality of Rain.cfg", true);
+
+			FastPrinters = ConfigFile.Bind(
 				"Settings", "Fast Printers", true,
 				"Make printers print instantly."
 			);
-			FastShrineOfChance = Config.Bind(
+			FastShrineOfChance = ConfigFile.Bind(
 				"Settings", "Fast Shrine of Chance", true,
 				"Remove the usage delay from shrine of chances."
 			);
-			FastScrappers = Config.Bind(
+			FastScrappers = ConfigFile.Bind(
 				"Settings", "Fast Scrappers", true,
 				"Make scrappers scrap very fast."
 			);
-			ShareLunarCoins = Config.Bind(
+			ShareLunarCoins = ConfigFile.Bind(
 				"Settings", "Share Lunar Coins", true,
 				"Everyone will get a lunar coin when one is picked up."
 			);
-			TeleportGunnerTurrets = Config.Bind(
+			TeleportGunnerTurrets = ConfigFile.Bind(
 				"Settings", "Teleport Gunner Turrets", true,
 				"Gunner turrets will be teleported to the teleporter when it is activated."
 			);
