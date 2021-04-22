@@ -1,4 +1,5 @@
 ﻿using BepInEx;
+using BepInEx.Configuration;
 using R2API.Utils;
 using RoR2;
 using System.Collections.Generic;
@@ -14,18 +15,54 @@ namespace Chai
 		private const float RADIUS = 7f;
 		private const float BIG_RADIUS = 11.5f;
 
+		public static ConfigEntry<bool> FastPrinters { get; set; }
+		public static ConfigEntry<bool> FastShrineOfChance { get; set; }
+		public static ConfigEntry<bool> FastScrappers { get; set; }
+		public static ConfigEntry<bool> ShareLunarCoins { get; set; }
+		public static ConfigEntry<bool> TeleportGunnerTurrets { get; set; }
+
 		public void Awake()
 		{
+			// Create config
+			FastPrinters = Config.Bind(
+				"Settings", "Fast Printers", true,
+				"Make printers print instantly."
+			);
+			FastShrineOfChance = Config.Bind(
+				"Settings", "Fast Shrine of Chance", true,
+				"Remove the usage delay from shrine of chances."
+			);
+			FastScrappers = Config.Bind(
+				"Settings", "Fast Scrappers", true,
+				"Make scrappers scrap very fast."
+			);
+			ShareLunarCoins = Config.Bind(
+				"Settings", "Share Lunar Coins", true,
+				"Everyone will get a lunar coin when one is picked up."
+			);
+			TeleportGunnerTurrets = Config.Bind(
+				"Settings", "Teleport Gunner Turrets", true,
+				"Gunner turrets will be teleported to the teleporter when it is activated."
+			);
+
+			// Load stuff
 			On.RoR2.Stage.Start += (orig, self) =>
 			{
 				orig(self);
 				if (NetworkServer.active)
 				{
-					typeof(EntityStates.Duplicator.Duplicating).SetFieldValue("initialDelayDuration", 0f);
-					typeof(EntityStates.Duplicator.Duplicating).SetFieldValue("timeBetweenStartAndDropDroplet", 0f);
-					//typeof(EntityStates.Scrapper.WaitToBeginScrapping).SetFieldValue("duration", 0f);
-					typeof(EntityStates.Scrapper.Scrapping).SetFieldValue("duration", 0f);
-					typeof(EntityStates.Scrapper.ScrappingToIdle).SetFieldValue("duration", 0.25f);
+					if (FastPrinters.Value)
+					{
+						typeof(EntityStates.Duplicator.Duplicating).SetFieldValue("initialDelayDuration", 0f);
+						typeof(EntityStates.Duplicator.Duplicating).SetFieldValue("timeBetweenStartAndDropDroplet", 0f);
+					}
+
+					if (FastScrappers.Value)
+					{
+						//typeof(EntityStates.Scrapper.WaitToBeginScrapping).SetFieldValue("duration", 0f);
+						typeof(EntityStates.Scrapper.Scrapping).SetFieldValue("duration", 0f);
+						typeof(EntityStates.Scrapper.ScrappingToIdle).SetFieldValue("duration", 0.25f);
+					}
 				}
 			};
 
@@ -37,7 +74,7 @@ namespace Chai
 			On.EntityStates.Duplicator.Duplicating.DropDroplet += (orig, self) =>
 			{
 				orig(self);
-				if (NetworkServer.active)
+				if (FastPrinters.Value && NetworkServer.active)
 				{
 					self.outer.GetComponent<PurchaseInteraction>().Networkavailable = true;
 				}
@@ -53,11 +90,14 @@ namespace Chai
 			{
 				orig(self, body, count);
 
-				foreach (CharacterMaster cm in CharacterMaster.readOnlyInstancesList)
+				if (ShareLunarCoins.Value && NetworkServer.active)
 				{
-					NetworkUser networkUser = Util.LookUpBodyNetworkUser(cm.GetBody());
-					if (cm.GetBody() == body || networkUser == null) { continue; }
-					networkUser.AwardLunarCoins(count);
+					foreach (CharacterMaster cm in CharacterMaster.readOnlyInstancesList)
+					{
+						NetworkUser networkUser = Util.LookUpBodyNetworkUser(cm.GetBody());
+						if (cm.GetBody() == body || networkUser == null) { continue; }
+						networkUser.AwardLunarCoins(count);
+					}
 				}
 			};
 
