@@ -111,6 +111,25 @@ namespace Chai
 				}
 			};
 
+			On.RoR2.UI.PickupPickerPanel.Awake += (orig, self) =>
+			{
+				orig.Invoke(self);
+				Time.timeScale = 0f;
+			};
+			On.RoR2.PickupPickerController.OnDisplayEnd += (orig, self, NetworkUIPromptController, LocalUser, CameraRigController) =>
+			{
+				orig.Invoke(self, NetworkUIPromptController, LocalUser, CameraRigController);
+				//LocalUser.cachedBody.AddTimedBuff(BuffCatalog.FindBuffIndex("HiddenInvincibility"), 3);
+				//LocalUser.cachedBody.AddTimedBuff(BuffCatalog.FindBuffIndex("HealingDisabled"), 3);
+				Time.timeScale = 1f;
+			};
+
+			/*On.RoR2.UI.PickupPickerPanel.SetPickupOptions += (orig, self, options) =>
+			{
+				ChatMessage.Send("panel");
+				orig(self, options);
+			};*/
+
 			// Teleport all gunner turrets to teleporter
 			On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, activator) =>
 			{
