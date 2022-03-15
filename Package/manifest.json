@@ -1,0 +1,10 @@
+{
+	"name": "Quality_of_Rain",
+	"version_number": "1.1.0",
+	"website_url": "https://github.com/Chailotl/quality-of-rain",
+	"description": "A couple of quality of life tweaks. Fully configurable!",
+	"dependencies": [
+		"bbepis-BepInExPack-5.4.1903",
+		"tristanmcpherson-R2API-4.0.11"
+	]
+}

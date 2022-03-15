@@ -1,17 +1,24 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using R2API.Utils;
 using RoR2;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
 
 namespace Chai
 {
-	[BepInDependency("com.bepis.r2api")]
-	[BepInPlugin("com.chai.qualityOfRain", "Quality of Rain", "1.0.0")]
+	[BepInDependency(R2API.R2API.PluginGUID)]
+	[BepInPlugin(PluginGUID, PluginName, PluginVersion)]
+
 	public class QualityOfRain : BaseUnityPlugin
 	{
+		public const string PluginGUID = "com.chai.qualityOfRain";
+		public const string PluginAuthor = "Chai";
+		public const string PluginName = "Quality of Rain";
+		public const string PluginVersion = "1.1.0";
+
 		private const float RADIUS = 7f;
 		private const float BIG_RADIUS = 11.5f;
 
@@ -19,11 +26,16 @@ namespace Chai
 		public static ConfigEntry<bool> FastPrinters { get; set; }
 		public static ConfigEntry<bool> FastShrineOfChance { get; set; }
 		public static ConfigEntry<bool> FastScrappers { get; set; }
+		public static ConfigEntry<bool> FastCauldrons { get; set; }
 		public static ConfigEntry<bool> ShareLunarCoins { get; set; }
+		public static ConfigEntry<bool> SafeMenus { get; set; }
+		public static ConfigEntry<float> GracePeriod { get; set; }
 		public static ConfigEntry<bool> TeleportGunnerTurrets { get; set; }
 
-		public void Awake()
+		void Awake()
 		{
+			Log.Init(Logger);
+
 			// Create config
 			ConfigFile = new ConfigFile(Paths.ConfigPath + "\\Quality of Rain.cfg", true);
 
@@ -39,9 +51,21 @@ namespace Chai
 				"Settings", "Fast Scrappers", true,
 				"Make scrappers scrap very fast."
 			);
+			FastCauldrons = ConfigFile.Bind(
+				"Settings", "Fast Cauldrons", true,
+				"Make cauldrons bubble instantly."
+			);
 			ShareLunarCoins = ConfigFile.Bind(
 				"Settings", "Share Lunar Coins", true,
 				"Everyone will get a lunar coin when one is picked up."
+			);
+			SafeMenus = ConfigFile.Bind(
+				"Settings", "Safe Menus", true,
+				"Command essences, void potentials, and scrappers will give you a grace period when opened."
+			);
+			GracePeriod = ConfigFile.Bind(
+				"Settings", "Grace Period", 15f,
+				"How long is the grace period granted from safe menus."
 			);
 			TeleportGunnerTurrets = ConfigFile.Bind(
 				"Settings", "Teleport Gunner Turrets", true,
@@ -52,6 +76,7 @@ namespace Chai
 			On.RoR2.Stage.Start += (orig, self) =>
 			{
 				orig(self);
+
 				if (NetworkServer.active)
 				{
 					if (FastPrinters.Value)
@@ -79,6 +104,7 @@ namespace Chai
 			On.EntityStates.Duplicator.Duplicating.DropDroplet += (orig, self) =>
 			{
 				orig(self);
+
 				if (FastPrinters.Value && NetworkServer.active)
 				{
 					self.outer.GetComponent<PurchaseInteraction>().Networkavailable = true;
@@ -89,25 +115,65 @@ namespace Chai
 			On.RoR2.ShrineChanceBehavior.AddShrineStack += (orig, self, activator) =>
 			{
 				orig(self, activator);
+
 				if (FastShrineOfChance.Value && NetworkServer.active)
 				{
 					self.SetFieldValue("refreshTimer", 0f);
 				}
 			};
 
-			// Share lunar coins will all players
-			On.RoR2.GenericPickupController.GrantLunarCoin += (orig, self, body, count) =>
+			// Make cauldrons instant
+			On.RoR2.EntityLogic.DelayedEvent.CallDelayed += (orig, self, timer) =>
 			{
-				orig(self, body, count);
-
-				if (ShareLunarCoins.Value && NetworkServer.active)
+				if (FastCauldrons.Value && NetworkServer.active && self.ToString().Contains("LunarCauldron"))
 				{
-					foreach (CharacterMaster cm in CharacterMaster.readOnlyInstancesList)
+					timer = 0f;
+				}
+				
+				orig(self, timer);
+			};
+
+			// Share lunar coins will all players
+			On.RoR2.GenericPickupController.OnInteractionBegin += (orig, self, activator) =>
+			{
+				orig(self, activator);
+
+				if (ShareLunarCoins.Value && NetworkServer.active &&
+					self.pickupIndex == PickupCatalog.FindPickupIndex("LunarCoin.Coin0"))
+				{
+					foreach (var pcmc in PlayerCharacterMasterController.instances)
 					{
-						NetworkUser networkUser = Util.LookUpBodyNetworkUser(cm.GetBody());
-						if (cm.GetBody() == body || networkUser == null) { continue; }
-						networkUser.AwardLunarCoins(count);
+						// Award it to everyone but who picked it up
+						if (activator.GetComponent<CharacterBody>() != pcmc.master.GetBody())
+						{
+							pcmc.networkUser.AwardLunarCoins(1);
+						}
 					}
+				}
+			};
+
+			// Give players a grace period when accessing command/void potentials and scrappers
+			On.RoR2.PickupPickerController.OnDisplayBegin += (orig, self, networkUI, localUser, cameraRig) =>
+			{
+				orig(self, networkUI, localUser, cameraRig);
+
+				if (SafeMenus.Value && NetworkServer.active)
+				{
+					CharacterBody body = localUser.cachedBody;
+					body.AddTimedBuff(RoR2Content.Buffs.HiddenInvincibility, GracePeriod.Value);
+					body.AddTimedBuff(RoR2Content.Buffs.HealingDisabled, GracePeriod.Value);
+				}
+			};
+
+			On.RoR2.PickupPickerController.OnDisplayEnd += (orig, self, networkUI, localUser, cameraRig) =>
+			{
+				orig(self, networkUI, localUser, cameraRig);
+
+				if (SafeMenus.Value && NetworkServer.active)
+				{
+					CharacterBody body = localUser.cachedBody;
+					body.ClearTimedBuffs(RoR2Content.Buffs.HiddenInvincibility);
+					body.ClearTimedBuffs(RoR2Content.Buffs.HealingDisabled);
 				}
 			};
 
@@ -130,18 +196,34 @@ namespace Chai
 				float angle = 2 * Mathf.PI / turrets.Count;
 				bool primordial = self.name.StartsWith("Lunar");
 				float radius = primordial ? BIG_RADIUS : RADIUS;
+				
 				for (int i = 0; i < turrets.Count; ++i)
 				{
 					Vector3 point = new Vector3(Mathf.Cos(angle * i) * radius, 10f, Mathf.Sin(angle * i) * radius);
-
+					
 					if (Physics.Raycast(self.transform.position + point, Vector3.down, out RaycastHit hit))
 					{
 						point = hit.point;
 						point.y += 0.1f;
-						TeleportHelper.TeleportBody(turrets[i].GetBody(), point);
+						try
+						{
+							// For some reason this crashes despite it working perfectly fine
+							TeleportHelper.TeleportBody(turrets[i].GetBody(), point);
+						}
+						catch (Exception e) { }
 					}
 				}
 			};
 		}
+
+		// Debug code
+		/*void Update()
+		{
+			if (Input.GetKeyDown(KeyCode.F2))
+			{
+				var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+				PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex("LunarCoin.Coin0"), transform.position, transform.forward * 20f);
+			}
+		}*/
 	}
 }

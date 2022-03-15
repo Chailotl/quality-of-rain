@@ -11,10 +11,14 @@ Remove the 2 second usage delay from shrine of chances.
 ## Fast Scrappers
 Make scrappers scrap very fast. What normally would take up to 10 seconds with 10 items now takes 1-3 seconds.
 
-*The reason it is not instant is because scrapping 10 items at once is pretty loud and it looks unprofessional.*
+## Fast Cauldrons
+Makes cauldrons bubble instantly. What more is there to say?
 
 ## Share Lunar Coins
 Everyone will get a lunar coin when one is picked up. Sweet, no more hoarding!
+
+## Safe Menus
+When you have a command essence, void potential, or scrapper menu open, it will give you a grace period. The duration of this grace period can be configured.
 
 ## Teleport Gunner Turrets
 Gunner turrets will be teleported to the teleporter when it is activated.
