@@ -25,6 +25,7 @@ namespace Chai
 		public static ConfigEntry<bool> FastPrinters { get; set; }
 		public static ConfigEntry<bool> FastShrineOfChance { get; set; }
 		public static ConfigEntry<bool> FastScrappers { get; set; }
+		public static ConfigEntry<bool> FastCauldrons { get; set; }
 		public static ConfigEntry<bool> ShareLunarCoins { get; set; }
 		public static ConfigEntry<bool> TeleportGunnerTurrets { get; set; }
 
@@ -44,6 +45,10 @@ namespace Chai
 			FastScrappers = ConfigFile.Bind(
 				"Settings", "Fast Scrappers", true,
 				"Make scrappers scrap very fast."
+			);
+			FastCauldrons = ConfigFile.Bind(
+				"Settings", "Fast Cauldrons", true,
+				"Make cauldrons bubble instantly."
 			);
 			ShareLunarCoins = ConfigFile.Bind(
 				"Settings", "Share Lunar Coins", true,
@@ -99,6 +104,17 @@ namespace Chai
 				{
 					self.SetFieldValue("refreshTimer", 0f);
 				}
+			};
+
+			// Make cauldrons instant
+			On.RoR2.EntityLogic.DelayedEvent.CallDelayed += (orig, self, timer) =>
+			{
+				if (FastCauldrons.Value && NetworkServer.active && self.ToString().Contains("LunarCauldron"))
+				{
+					timer = 0f;
+				}
+				
+				orig(self, timer);
 			};
 
 			// Share lunar coins will all players
