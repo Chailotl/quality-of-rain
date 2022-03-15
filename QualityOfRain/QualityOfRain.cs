@@ -29,8 +29,10 @@ namespace Chai
 		public static ConfigEntry<bool> ShareLunarCoins { get; set; }
 		public static ConfigEntry<bool> TeleportGunnerTurrets { get; set; }
 
-		public void Awake()
+		void Awake()
 		{
+			Log.Init(Logger);
+
 			// Create config
 			ConfigFile = new ConfigFile(Paths.ConfigPath + "\\Quality of Rain.cfg", true);
 
