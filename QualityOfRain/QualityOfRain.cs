@@ -27,6 +27,8 @@ namespace Chai
 		public static ConfigEntry<bool> FastScrappers { get; set; }
 		public static ConfigEntry<bool> FastCauldrons { get; set; }
 		public static ConfigEntry<bool> ShareLunarCoins { get; set; }
+		public static ConfigEntry<bool> SafeMenus { get; set; }
+		public static ConfigEntry<float> GracePeriod { get; set; }
 		public static ConfigEntry<bool> TeleportGunnerTurrets { get; set; }
 
 		void Awake()
@@ -55,6 +57,14 @@ namespace Chai
 			ShareLunarCoins = ConfigFile.Bind(
 				"Settings", "Share Lunar Coins", true,
 				"Everyone will get a lunar coin when one is picked up."
+			);
+			SafeMenus = ConfigFile.Bind(
+				"Settings", "Safe Menus", true,
+				"Command essences, void potentials, and scrappers will give you a grace period when opened."
+			);
+			GracePeriod = ConfigFile.Bind(
+				"Settings", "Grace Period", 15f,
+				"How long is the grace period granted from safe menus."
 			);
 			TeleportGunnerTurrets = ConfigFile.Bind(
 				"Settings", "Teleport Gunner Turrets", true,
@@ -120,39 +130,48 @@ namespace Chai
 			};
 
 			// Share lunar coins will all players
-			On.RoR2.GenericPickupController.GrantLunarCoin += (orig, self, body, count) =>
+			On.RoR2.GenericPickupController.OnInteractionBegin += (orig, self, activator) =>
 			{
-				orig(self, body, count);
+				orig(self, activator);
 
-				if (ShareLunarCoins.Value && NetworkServer.active)
+				if (ShareLunarCoins.Value && NetworkServer.active &&
+					self.pickupIndex == PickupCatalog.FindPickupIndex("LunarCoin.Coin0"))
 				{
-					foreach (CharacterMaster cm in CharacterMaster.readOnlyInstancesList)
+					foreach (var pcmc in PlayerCharacterMasterController.instances)
 					{
-						NetworkUser networkUser = Util.LookUpBodyNetworkUser(cm.GetBody());
-						if (cm.GetBody() == body || networkUser == null) { continue; }
-						networkUser.AwardLunarCoins(count);
+						// Award it to everyone but who picked it up
+						if (activator.GetComponent<CharacterBody>() != pcmc.master.GetBody())
+						{
+							pcmc.networkUser.AwardLunarCoins(1);
+						}
 					}
 				}
 			};
 
-			On.RoR2.UI.PickupPickerPanel.Awake += (orig, self) =>
+			// Give players a grace period when accessing command/void potentials and scrappers
+			On.RoR2.PickupPickerController.OnDisplayBegin += (orig, self, networkUI, localUser, cameraRig) =>
 			{
-				orig.Invoke(self);
-				Time.timeScale = 0f;
-			};
-			On.RoR2.PickupPickerController.OnDisplayEnd += (orig, self, NetworkUIPromptController, LocalUser, CameraRigController) =>
-			{
-				orig.Invoke(self, NetworkUIPromptController, LocalUser, CameraRigController);
-				//LocalUser.cachedBody.AddTimedBuff(BuffCatalog.FindBuffIndex("HiddenInvincibility"), 3);
-				//LocalUser.cachedBody.AddTimedBuff(BuffCatalog.FindBuffIndex("HealingDisabled"), 3);
-				Time.timeScale = 1f;
+				orig(self, networkUI, localUser, cameraRig);
+
+				if (SafeMenus.Value && NetworkServer.active)
+				{
+					CharacterBody body = localUser.cachedBody;
+					body.AddTimedBuff(RoR2Content.Buffs.HiddenInvincibility, GracePeriod.Value);
+					body.AddTimedBuff(RoR2Content.Buffs.HealingDisabled, GracePeriod.Value);
+				}
 			};
 
-			/*On.RoR2.UI.PickupPickerPanel.SetPickupOptions += (orig, self, options) =>
+			On.RoR2.PickupPickerController.OnDisplayEnd += (orig, self, networkUI, localUser, cameraRig) =>
 			{
-				ChatMessage.Send("panel");
-				orig(self, options);
-			};*/
+				orig(self, networkUI, localUser, cameraRig);
+
+				if (SafeMenus.Value && NetworkServer.active)
+				{
+					CharacterBody body = localUser.cachedBody;
+					body.ClearTimedBuffs(RoR2Content.Buffs.HiddenInvincibility);
+					body.ClearTimedBuffs(RoR2Content.Buffs.HealingDisabled);
+				}
+			};
 
 			// Teleport all gunner turrets to teleporter
 			On.RoR2.TeleporterInteraction.OnInteractionBegin += (orig, self, activator) =>
