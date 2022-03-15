@@ -205,7 +205,12 @@ namespace Chai
 					{
 						point = hit.point;
 						point.y += 0.1f;
-						TeleportHelper.TeleportBody(turrets[i].GetBody(), point);
+						try
+						{
+							// For some reason this crashes despite it working perfectly fine
+							TeleportHelper.TeleportBody(turrets[i].GetBody(), point);
+						}
+						catch (Exception e) { }
 					}
 				}
 			};
