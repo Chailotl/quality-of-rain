@@ -8,10 +8,16 @@ using UnityEngine.Networking;
 
 namespace Chai
 {
-	[BepInDependency("com.bepis.r2api")]
-	[BepInPlugin("com.chai.qualityOfRain", "Quality of Rain", "1.0.0")]
+	[BepInDependency(R2API.R2API.PluginGUID)]
+	[BepInPlugin(PluginGUID, PluginName, PluginVersion)]
+
 	public class QualityOfRain : BaseUnityPlugin
 	{
+		public const string PluginGUID = "com.chai.qualityOfRain";
+		public const string PluginAuthor = "Chai";
+		public const string PluginName = "Quality of Rain";
+		public const string PluginVersion = "1.1.0";
+
 		private const float RADIUS = 7f;
 		private const float BIG_RADIUS = 11.5f;
 
