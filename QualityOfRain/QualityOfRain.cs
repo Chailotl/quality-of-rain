@@ -184,5 +184,15 @@ namespace Chai
 				}
 			};
 		}
+
+		// Debug code
+		/*void Update()
+		{
+			if (Input.GetKeyDown(KeyCode.F2))
+			{
+				var transform = PlayerCharacterMasterController.instances[0].master.GetBodyObject().transform;
+				PickupDropletController.CreatePickupDroplet(PickupCatalog.FindPickupIndex("LunarCoin.Coin0"), transform.position, transform.forward * 20f);
+			}
+		}*/
 	}
 }
