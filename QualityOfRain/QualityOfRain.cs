@@ -1,10 +1,11 @@
-﻿using BepInEx;
+using BepInEx;
 using BepInEx.Configuration;
 using R2API.Utils;
 using RoR2;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
+using System;
 
 namespace Chai
 {
@@ -75,6 +76,7 @@ namespace Chai
 			On.RoR2.Stage.Start += (orig, self) =>
 			{
 				orig(self);
+
 				if (NetworkServer.active)
 				{
 					if (FastPrinters.Value)
@@ -102,6 +104,7 @@ namespace Chai
 			On.EntityStates.Duplicator.Duplicating.DropDroplet += (orig, self) =>
 			{
 				orig(self);
+
 				if (FastPrinters.Value && NetworkServer.active)
 				{
 					self.outer.GetComponent<PurchaseInteraction>().Networkavailable = true;
@@ -112,6 +115,7 @@ namespace Chai
 			On.RoR2.ShrineChanceBehavior.AddShrineStack += (orig, self, activator) =>
 			{
 				orig(self, activator);
+
 				if (FastShrineOfChance.Value && NetworkServer.active)
 				{
 					self.SetFieldValue("refreshTimer", 0f);
@@ -192,10 +196,11 @@ namespace Chai
 				float angle = 2 * Mathf.PI / turrets.Count;
 				bool primordial = self.name.StartsWith("Lunar");
 				float radius = primordial ? BIG_RADIUS : RADIUS;
+				
 				for (int i = 0; i < turrets.Count; ++i)
 				{
 					Vector3 point = new Vector3(Mathf.Cos(angle * i) * radius, 10f, Mathf.Sin(angle * i) * radius);
-
+					
 					if (Physics.Raycast(self.transform.position + point, Vector3.down, out RaycastHit hit))
 					{
 						point = hit.point;
